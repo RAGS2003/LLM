@@ -1,0 +1,16 @@
+# For mail extraction 
+imapclient 
+standard library: imaplib, email, csv,  os are included with python 
+
+# For the app and handling data
+pandas 
+streamlit 
+
+# For LLM, Googe gemini API 
+google-genai
+
+# Exporting pdf for summary 
+fpdf
+
+# Regular expression for email extraction
+re 
