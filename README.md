@@ -1,1 +1,1 @@
-# LLM
+# SheBrewsDaily LLM Mail Summarizer
