@@ -138,7 +138,7 @@ html, body, .stApp {
     padding: 2em 2em 1.2em 2em;
     margin: 2em auto;
     color: #181818 !important;
-    font-family: 'Quicksand', 'Poppins', sans-serif !important;
+    font-family: 'Quickshand', 'Poppins', sans-serif !important;
     font-size: 1.11em;
     line-height: 2;
     max-width: 700px;
@@ -186,7 +186,7 @@ if selected_name:
             <div class='custom-card'>
                 <b>From:</b> {mail_row['Name']} ({mail_row['Email']})<br>
                 <b>Subject:</b> {mail_row['Subject']}<br>
-                <b>Body:</b><br><pre style='font-family:inherit;font-size:1.05em;background:transparent;color:#181818;'>{mail_row['Body']}</pre>
+                <b>Body:</b><br><pre style='font-family:inherit;font-size:1.05em;background:transparent;color=#181818;'>{mail_row['Body']}</pre>
             </div>
         """, unsafe_allow_html=True)
         mail_to_analyze = mail_row
@@ -202,7 +202,7 @@ if selected_name:
             <div class='custom-card'>
                 <b>From:</b> {mail_row['Name']} ({mail_row['Email']})<br>
                 <b>Subject:</b> {mail_row['Subject']}<br>
-                <b>Body:</b><br><pre style='font-family:inherit;font-size:1.05em;background:transparent;color:#181818;'>{mail_row['Body']}</pre>
+                <b>Body:</b><br><pre style='font-family:inherit;font-size:1.05em;background:transparent;color=#181818;'>{mail_row['Body']}</pre>
             </div>
         """, unsafe_allow_html=True)
         mail_to_analyze = mail_row
@@ -267,4 +267,49 @@ if mail_to_analyze is not None:
                 ):
                     result += getattr(chunk, "text", str(chunk))
             except ClientError as e:
-                                print("🚨 Gemini API failed: HTTP", e.status_code, "Error Code", e.code, "Message:", e.message)
+                print(
+                    "🚨 Gemini API failed:",
+                    "Code", e.code,
+                    "Status", e.status,
+                    "Message", e.message,
+                    "Details", e.details
+                )
+                st.error(f"GenAI request failed ({e.code} {e.status}) – check app logs.")
+                st.stop()
+
+        # 1) Ensure each bold heading starts on its own line
+        formatted = re.sub(
+            r"\s*\*\*([A-Za-z ]+?:\*\*)",
+            r"\n**\1",
+            result
+        ).strip()
+
+        # 2) Convert **bold** markdown into HTML <strong>…</strong>
+        html = re.sub(
+            r"\*\*(.+?)\*\*",
+            r"<strong>\1</strong>",
+            formatted
+        )
+
+        # 3) Render line breaks as <br><br>
+        html_result = html.replace("\n", "<br><br>")
+
+        # 4) Inject into your pink card as before
+        st.markdown(
+            f"<div class='summary-card'>{html_result}</div>",
+            unsafe_allow_html=True
+        )
+
+        # PDF download button, centered and pink with star
+        col_dl = st.columns([2, 2, 2])
+        with col_dl[1]:
+            file_base = safe_filename(mail_to_analyze['Name'])
+            file_name = f"{file_base}.pdf" if file_base else "summary.pdf"
+            pdf_bytes = summary_to_pdf(result)
+            st.download_button(
+                label="⭐ Download Summary as PDF",
+                data=pdf_bytes,
+                file_name=file_name,
+                mime="application/pdf",
+                use_container_width=True
+            )
