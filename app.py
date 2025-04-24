@@ -6,6 +6,8 @@ from google.genai import types
 from fpdf import FPDF
 import tempfile
 import re
+from google.genai.errors import ClientError
+
 
 def safe_filename(name):
     return re.sub(r'[^A-Za-z0-9]+', '_', name).strip('_')
@@ -255,15 +257,19 @@ if mail_to_analyze is not None:
         )
         result = ""
         with st.spinner("Analyzing cover letter..."):
-            for chunk in client.models.generate_content_stream(
-                model=model,
-                contents=contents,
-                config=generate_content_config,
-            ):
-                if hasattr(chunk, "text"):
-                    result += chunk.text
-                elif isinstance(chunk, str):
-                    result += chunk
+            try:
+                for chunk in client.models.generate_content_stream(
+                    model=model,
+                    contents=contents,
+                    config=generate_content_config,
+        ):
+            # accumulate the streamed text
+            result += getattr(chunk, "text", str(chunk))
+            except ClientError as e:
+                print("🚨 Gemini API failed:", e.status_code, e.error_json)
+                st.error(f"GenAI request failed (status {e.status_code}) – check app logs.")
+                st.stop()  # stop further execution so we don’t try to format ‘result’
+
 
             # Show the summary INSIDE the card
 

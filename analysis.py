@@ -2,8 +2,9 @@ import csv
 import os
 
 # SET YOUR GEMINI API KEY
-os.environ["GEMINI_API_KEY"] = "AIzaSyC904tuXOVbxw3FFRgNt004R7YIkAO7tBk"   
-
+api_key = st.secrets["GEMINI_API_KEY"]
+client  = genai.Client(api_key=api_key)
+   
 from google import genai
 from google.genai import types
 
