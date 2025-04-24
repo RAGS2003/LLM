@@ -3,14 +3,15 @@ import pandas as pd
 import os
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 from fpdf import FPDF
 import tempfile
 import re
-from google.genai.errors import ClientError
 
 
 def safe_filename(name):
     return re.sub(r'[^A-Za-z0-9]+', '_', name).strip('_')
+
 
 def summary_to_pdf(summary_markdown, filename="summary.pdf"):
     text = summary_markdown.replace("**", "")
@@ -217,7 +218,6 @@ if mail_to_analyze is not None:
     with col_center[1]:
         summary_button = st.button("✨ Summarize This Cover Letter", use_container_width=True)
     if summary_button:
-        
         api_key = os.environ["GEMINI_API_KEY"]
         client = genai.Client(api_key=api_key)
         model = "gemini-2.5-pro-exp-03-25"
@@ -225,7 +225,7 @@ if mail_to_analyze is not None:
         prompt_text = (
             "You are an HR assistant. Read the following job application or cover letter email. Extract the details below and present in markdown. "
             "Put EACH field heading and its content on a separate line. NEVER merge Name, Email, or Address on the same line. "
-            "ONLY show the Address field if an address is actually found in the email (otherwise skip the line completely).\n\n"
+            "ONLY show the Address field if an address is actually found in the email (otherwise skip the line completely.)\n\n"
             "- **Credentials:** [Highest degree or current program and institute. Skip if not found.]\n"
             "- **Name:** [Full name. Skip if not found.]\n"
             "- **Email:** [Email address. Skip if not found.]\n"
@@ -255,6 +255,8 @@ if mail_to_analyze is not None:
             response_mime_type="text/plain",
             system_instruction=[types.Part(text=prompt_text)],
         )
+
+        # === Gemini API call with error handling ===
         result = ""
         with st.spinner("Analyzing cover letter..."):
             try:
@@ -262,18 +264,14 @@ if mail_to_analyze is not None:
                     model=model,
                     contents=contents,
                     config=generate_content_config,
-        ):
-            # accumulate the streamed text
-            result += getattr(chunk, "text", str(chunk))
+                ):
+                    result += getattr(chunk, "text", str(chunk))
             except ClientError as e:
                 print("🚨 Gemini API failed:", e.status_code, e.error_json)
                 st.error(f"GenAI request failed (status {e.status_code}) – check app logs.")
-                st.stop()  # stop further execution so we don’t try to format ‘result’
+                st.stop()
 
-
-            # Show the summary INSIDE the card
-
-# 1) Ensure each bold heading starts on its own line
+        # 1) Ensure each bold heading starts on its own line
         formatted = re.sub(
             r"\s*\*\*([A-Za-z ]+?:\*\*)",
             r"\n**\1",
@@ -295,8 +293,7 @@ if mail_to_analyze is not None:
             f"<div class='summary-card'>{html_result}</div>",
             unsafe_allow_html=True
         )
-        
-        
+
         # PDF download button, centered and pink with star
         col_dl = st.columns([2, 2, 2])
         with col_dl[1]:
