@@ -267,43 +267,4 @@ if mail_to_analyze is not None:
                 ):
                     result += getattr(chunk, "text", str(chunk))
             except ClientError as e:
-                print("🚨 Gemini API failed:", e.status_code, e.error)
-                st.error(f"GenAI request failed (status {e.status_code}) – check app logs.")
-                st.stop()
-
-        # 1) Ensure each bold heading starts on its own line
-        formatted = re.sub(
-            r"\s*\*\*([A-Za-z ]+?:\*\*)",
-            r"\n**\1",
-            result
-        ).strip()
-
-        # 2) Convert **bold** markdown into HTML <strong>…</strong>
-        html = re.sub(
-            r"\*\*(.+?)\*\*",
-            r"<strong>\1</strong>",
-            formatted
-        )
-
-        # 3) Render line breaks as <br><br>
-        html_result = html.replace("\n", "<br><br>")
-
-        # 4) Inject into your pink card as before
-        st.markdown(
-            f"<div class='summary-card'>{html_result}</div>",
-            unsafe_allow_html=True
-        )
-
-        # PDF download button, centered and pink with star
-        col_dl = st.columns([2, 2, 2])
-        with col_dl[1]:
-            file_base = safe_filename(mail_to_analyze['Name'])
-            file_name = f"{file_base}.pdf" if file_base else "summary.pdf"
-            pdf_bytes = summary_to_pdf(result)
-            st.download_button(
-                label="⭐ Download Summary as PDF",
-                data=pdf_bytes,
-                file_name=file_name,
-                mime="application/pdf",
-                use_container_width=True
-            )
+                                print("🚨 Gemini API failed: HTTP", e.status_code, "Error Code", e.code, "Message:", e.message)
