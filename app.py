@@ -267,7 +267,7 @@ if mail_to_analyze is not None:
                 ):
                     result += getattr(chunk, "text", str(chunk))
             except ClientError as e:
-                print("🚨 Gemini API failed:", e.status_code, e.error_json)
+                print("🚨 Gemini API failed:", e.status_code, e.error)
                 st.error(f"GenAI request failed (status {e.status_code}) – check app logs.")
                 st.stop()
 
